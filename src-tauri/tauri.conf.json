@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ZynkPOS © Zynknet Technology Solutions",
+  "version": "1.0.0",
+  "identifier": "com.samaraadvertising.lassanapatapos",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "title": "ZynkPOS © Zynknet Technology Solutions",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1200,
+        "minHeight": 700,
+        "maximized": true,
+        "resizable": true,
+        "decorations": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src http://localhost:* http://127.0.0.1:* https:; img-src 'self' data: blob: https: http:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "nsis": {
+        "headerImage": "installer-assets/nsis-header.bmp",
+        "sidebarImage": "installer-assets/nsis-sidebar.bmp",
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser"
+      },
+      "wix": {
+        "bannerPath": "installer-assets/wix-banner.bmp",
+        "dialogImagePath": "installer-assets/wix-dialog.bmp"
+      }
+    }
+  }
+}
