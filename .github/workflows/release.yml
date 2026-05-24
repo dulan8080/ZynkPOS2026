@@ -41,24 +41,49 @@ jobs:
         run: |
           $keyB64 = "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
           if (-not $keyB64) { Write-Host "ERROR: TAURI_SIGNING_PRIVATE_KEY is not set!"; exit 1 }
-          # Decode base64 -> raw minisign key text -> write to file
           $keyBytes = [System.Convert]::FromBase64String($keyB64.Trim())
           $keyText  = [System.Text.Encoding]::UTF8.GetString($keyBytes)
           $keyPath  = "$env:RUNNER_TEMP\tauri-signing.key"
-          [System.IO.File]::WriteAllText($keyPath, $keyText)
-          Write-Host "Signing key written to $keyPath"
-          Write-Host "Key preview: $($keyText.Substring(0, [Math]::Min(60, $keyText.Length)))..."
-          # Tauri reads TAURI_SIGNING_PRIVATE_KEY — can be a file path or base64
-          "TAURI_SIGNING_PRIVATE_KEY=$keyPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+          [System.IO.File]::WriteAllText($keyPath, $keyText, $utf8NoBom)
+          Write-Host "Signing key written to: $keyPath"
+          Write-Host "Key starts: $($keyText.Substring(0, [Math]::Min(40, $keyText.Length)))"
+          # Store as TAURI_KEY_PATH so Tauri build does NOT auto-sign (we'll sign manually)
+          "TAURI_KEY_PATH=$keyPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Build Tauri app
         run: npm run tauri build -- --bundles nsis
 
-      - name: List bundle output
+      - name: Create and sign update archive
+        id: artifacts
         shell: pwsh
         run: |
-          Write-Host "=== Bundle directory contents ==="
-          Get-ChildItem "src-tauri\target\release\bundle" -Recurse -File | Select-Object FullName
+          $dir = "src-tauri\target\release\bundle\nsis"
+          Write-Host "=== Bundle directory ==="
+          Get-ChildItem $dir -Recurse -File | Select-Object FullName
+
+          $exe = (Get-ChildItem $dir -Filter "*-setup.exe" | Select-Object -First 1).FullName
+          if (-not $exe) { Write-Host "ERROR: No *-setup.exe found in $dir"; exit 1 }
+          Write-Host "Installer: $exe"
+
+          # Create .nsis.zip update archive (zip containing the installer at root)
+          $zip = $exe -replace "-setup\.exe$", "-setup.nsis.zip"
+          Compress-Archive -Path $exe -DestinationPath $zip -Force
+          Write-Host "Archive created: $zip"
+
+          # Sign the archive using tauri signer CLI (key has no password)
+          $keyPath = $env:TAURI_KEY_PATH
+          Write-Host "Signing with key: $keyPath"
+          npx tauri signer sign -k $keyPath --password "" $zip
+          if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: tauri signer sign exited $LASTEXITCODE"; exit 1 }
+
+          $sig = "$zip.sig"
+          if (-not (Test-Path $sig)) { Write-Host "ERROR: .sig file not created at $sig"; exit 1 }
+          Write-Host "Signature: $sig"
+
+          echo "zip=$zip" >> $env:GITHUB_OUTPUT
+          echo "sig=$sig" >> $env:GITHUB_OUTPUT
+          echo "exe=$exe" >> $env:GITHUB_OUTPUT
 
       - name: Get version from tag
         id: version
@@ -68,23 +93,6 @@ jobs:
           $ver = $tag.TrimStart('v')
           echo "tag=$tag" >> $env:GITHUB_OUTPUT
           echo "ver=$ver" >> $env:GITHUB_OUTPUT
-
-      - name: Collect artifacts
-        id: artifacts
-        shell: pwsh
-        run: |
-          $dir = "src-tauri\target\release\bundle\nsis"
-          $zip = (Get-ChildItem $dir -Filter "*.nsis.zip" | Select-Object -First 1).FullName
-          $sig = (Get-ChildItem $dir -Filter "*.nsis.zip.sig" | Select-Object -First 1).FullName
-          $exe = (Get-ChildItem $dir -Filter "*-setup.exe" | Select-Object -First 1).FullName
-          if (-not $zip) { Write-Host "ERROR: no .nsis.zip found in $dir" -ForegroundColor Red; Get-ChildItem $dir; exit 1 }
-          if (-not $sig) { Write-Host "ERROR: no .sig found — signing key missing?" -ForegroundColor Red; exit 1 }
-          Write-Host "zip: $zip"
-          Write-Host "sig: $sig"
-          Write-Host "exe: $exe"
-          echo "zip=$zip" >> $env:GITHUB_OUTPUT
-          echo "sig=$sig" >> $env:GITHUB_OUTPUT
-          echo "exe=$exe" >> $env:GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
