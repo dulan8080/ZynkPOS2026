@@ -36,19 +36,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check signing secrets
+      - name: Setup signing key
         shell: pwsh
         run: |
-          if (-not "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}") {
-            Write-Host "ERROR: TAURI_SIGNING_PRIVATE_KEY secret is not set!" -ForegroundColor Red
-            Write-Host "Go to: https://github.com/dulan8080/ZynkPOS2026/settings/secrets/actions" -ForegroundColor Yellow
-            exit 1
-          }
-          Write-Host "Signing secrets are present." -ForegroundColor Green
+          $keyB64 = "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
+          if (-not $keyB64) { Write-Host "ERROR: TAURI_SIGNING_PRIVATE_KEY is not set!"; exit 1 }
+          # Decode base64 -> raw minisign key text -> write to file
+          $keyBytes = [System.Convert]::FromBase64String($keyB64.Trim())
+          $keyText  = [System.Text.Encoding]::UTF8.GetString($keyBytes)
+          $keyPath  = "$env:RUNNER_TEMP\tauri-signing.key"
+          [System.IO.File]::WriteAllText($keyPath, $keyText)
+          Write-Host "Signing key written to $keyPath"
+          Write-Host "Key preview: $($keyText.Substring(0, [Math]::Min(60, $keyText.Length)))..."
+          "TAURI_SIGNING_PRIVATE_KEY_PATH=$keyPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Build Tauri app
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: npm run tauri build -- --bundles nsis
 
       - name: List bundle output
