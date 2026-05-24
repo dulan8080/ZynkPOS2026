@@ -71,15 +71,19 @@ jobs:
           Compress-Archive -Path $exe -DestinationPath $zip -Force
           Write-Host "Archive created: $zip"
 
-          # Sign the archive using tauri signer CLI (key has no password)
+          # Sign the archive using tauri signer CLI
           $keyPath = $env:TAURI_KEY_PATH
-          Write-Host "Signing with key: $keyPath"
-          npx tauri signer sign -k $keyPath --password "" $zip
-          if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: tauri signer sign exited $LASTEXITCODE"; exit 1 }
+          Write-Host "Key path: $keyPath"
+          Write-Host "Key file exists: $(Test-Path $keyPath)"
+          Write-Host "Key content preview: $((Get-Content $keyPath -Raw).Substring(0,60))"
+          # Use --ci to skip interactive prompts (key was generated without password)
+          npx tauri signer sign --ci -k "$keyPath" "$zip"
+          Write-Host "tauri signer sign exit code: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: tauri signer sign failed"; exit 1 }
 
           $sig = "$zip.sig"
           if (-not (Test-Path $sig)) { Write-Host "ERROR: .sig file not created at $sig"; exit 1 }
-          Write-Host "Signature: $sig"
+          Write-Host "Signature created: $sig"
 
           echo "zip=$zip" >> $env:GITHUB_OUTPUT
           echo "sig=$sig" >> $env:GITHUB_OUTPUT
