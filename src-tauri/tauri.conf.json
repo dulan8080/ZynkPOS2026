@@ -46,7 +46,8 @@
                                                 "headerImage":  "installer-assets/nsis-header.bmp",
                                                 "sidebarImage":  "installer-assets/nsis-sidebar.bmp",
                                                 "installerIcon":  "icons/icon.ico",
-                                                "installMode":  "currentUser"
+                                                "installMode":  "currentUser",
+                                                "createUpdaterArtifacts":  true
                                             },
                                    "wix":  {
                                                "bannerPath":  "installer-assets/wix-banner.bmp",
