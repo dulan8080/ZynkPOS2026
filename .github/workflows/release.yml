@@ -65,11 +65,15 @@ jobs:
         id: artifacts
         shell: pwsh
         run: |
-          $ver = "${{ steps.version.outputs.ver }}"
           $dir = "src-tauri\target\release\bundle\nsis"
-          $zip = "$dir\ZynkPOS_${ver}_x64-setup.nsis.zip"
-          $sig = "$dir\ZynkPOS_${ver}_x64-setup.nsis.zip.sig"
-          $exe = "$dir\ZynkPOS_${ver}_x64-setup.exe"
+          $zip = (Get-ChildItem $dir -Filter "*.nsis.zip" | Select-Object -First 1).FullName
+          $sig = (Get-ChildItem $dir -Filter "*.nsis.zip.sig" | Select-Object -First 1).FullName
+          $exe = (Get-ChildItem $dir -Filter "*-setup.exe" | Select-Object -First 1).FullName
+          if (-not $zip) { Write-Host "ERROR: no .nsis.zip found in $dir" -ForegroundColor Red; Get-ChildItem $dir; exit 1 }
+          if (-not $sig) { Write-Host "ERROR: no .sig found — signing key missing?" -ForegroundColor Red; exit 1 }
+          Write-Host "zip: $zip"
+          Write-Host "sig: $sig"
+          Write-Host "exe: $exe"
           echo "zip=$zip" >> $env:GITHUB_OUTPUT
           echo "sig=$sig" >> $env:GITHUB_OUTPUT
           echo "exe=$exe" >> $env:GITHUB_OUTPUT
