@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Setup Rust
@@ -32,6 +32,16 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check signing secrets
+        shell: pwsh
+        run: |
+          if (-not "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}") {
+            Write-Host "ERROR: TAURI_SIGNING_PRIVATE_KEY secret is not set!" -ForegroundColor Red
+            Write-Host "Go to: https://github.com/dulan8080/ZynkPOS2026/settings/secrets/actions" -ForegroundColor Yellow
+            exit 1
+          }
+          Write-Host "Signing secrets are present." -ForegroundColor Green
 
       - name: Build Tauri app
         env:
