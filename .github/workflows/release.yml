@@ -43,8 +43,8 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"          # e.g. v1.0.2
-          $ver = $tag.TrimStart('v')               # e.g. 1.0.2
+          $tag = "${{ github.ref_name }}"
+          $ver = $tag.TrimStart('v')
           echo "tag=$tag" >> $env:GITHUB_OUTPUT
           echo "ver=$ver" >> $env:GITHUB_OUTPUT
 
@@ -54,18 +54,12 @@ jobs:
         run: |
           $ver = "${{ steps.version.outputs.ver }}"
           $dir = "src-tauri\target\release\bundle\nsis"
-
           $zip = "$dir\ZynkPOS_${ver}_x64-setup.nsis.zip"
           $sig = "$dir\ZynkPOS_${ver}_x64-setup.nsis.zip.sig"
           $exe = "$dir\ZynkPOS_${ver}_x64-setup.exe"
-
           echo "zip=$zip" >> $env:GITHUB_OUTPUT
           echo "sig=$sig" >> $env:GITHUB_OUTPUT
           echo "exe=$exe" >> $env:GITHUB_OUTPUT
-
-          # Embed the signature content into a GitHub Actions output
-          $sigContent = (Get-Content $sig -Raw).Trim()
-          echo "sig_content=$sigContent" >> $env:GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -75,11 +69,7 @@ jobs:
           body: |
             ## ZynkPOS v${{ steps.version.outputs.ver }}
 
-            ### Windows Installer
-            Download `ZynkPOS_${{ steps.version.outputs.ver }}_x64-setup.exe` below.
-
-            ---
-            <!-- UPDATER_SIG:${{ steps.artifacts.outputs.sig_content }} -->
+            Download the Windows installer below.
           files: |
             ${{ steps.artifacts.outputs.zip }}
             ${{ steps.artifacts.outputs.sig }}
