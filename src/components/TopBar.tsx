@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import {
   ShoppingBag, Clock, Sun, Moon, LogOut, Settings,
-  ChevronRight, Activity, RefreshCw, Printer, Monitor,
+  ChevronRight, Activity, RefreshCw, Printer, Monitor, Download,
 } from 'lucide-react'
+import { isTauri } from '@tauri-apps/api/core'
 import { usePOS, useAuth } from '../store'
 import { fmtCurrency } from '../utils'
 import type { User } from '../types'
@@ -23,6 +24,45 @@ export function TopBar({ user, onOpenPrinterSettings, onOpenSettings, customerDi
   const [time, setTime] = useState(new Date())
   const [showUserMenu, setShowUserMenu] = useState(false)
   const isLiveServer = apiBase.toLowerCase().includes(LIVE_API_HOST)
+
+  // ── Auto-updater ──────────────────────────────────────────────────────────
+  const [updateAvailable, setUpdateAvailable] = useState<{ version: string; notes?: string } | null>(null)
+  const [updateState, setUpdateState] = useState<'idle' | 'downloading' | 'done'>('idle')
+
+  useEffect(() => {
+    if (!isTauri()) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { check } = await import('@tauri-apps/plugin-updater')
+        const update = await check()
+        if (!cancelled && update?.available) {
+          setUpdateAvailable({ version: update.currentVersion, notes: update.body ?? undefined })
+          // store the update object so we can call downloadAndInstall later
+          ;(window as any).__posUpdate = update
+        }
+      } catch { /* silently ignore — server unreachable or no update */ }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  async function handleInstallUpdate() {
+    const update = (window as any).__posUpdate
+    if (!update) return
+    setUpdateState('downloading')
+    try {
+      await update.downloadAndInstall()
+      setUpdateState('done')
+      // Relaunch after a short delay so the user sees the "done" state
+      setTimeout(async () => {
+        const { relaunch } = await import('@tauri-apps/plugin-process')
+        await relaunch()
+      }, 1500)
+    } catch {
+      setUpdateState('idle')
+    }
+  }
+  // ── End auto-updater ─────────────────────────────────────────────────────
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000)
@@ -98,6 +138,21 @@ export function TopBar({ user, onOpenPrinterSettings, onOpenSettings, customerDi
         <div className="hidden lg:flex items-center px-2.5 py-1 rounded-lg border border-amber-500/35 bg-amber-500/10 text-amber-300 text-[11px] font-semibold tracking-wide">
           LIVE
         </div>
+      )}
+
+      {/* Update available banner */}
+      {updateAvailable && (
+        <button
+          onClick={handleInstallUpdate}
+          disabled={updateState !== 'idle'}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg border border-blue-400/40 bg-blue-500/10 text-blue-300 text-[11px] font-semibold transition-all hover:bg-blue-500/20 disabled:opacity-60"
+          title={updateAvailable.notes || 'Update available'}
+        >
+          <Download className="w-3.5 h-3.5" />
+          {updateState === 'idle' && `Update v${updateAvailable.version}`}
+          {updateState === 'downloading' && 'Installing…'}
+          {updateState === 'done' && 'Restarting…'}
+        </button>
       )}
 
       <div className="ml-auto flex items-center gap-3">

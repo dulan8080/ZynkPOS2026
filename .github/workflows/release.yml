@@ -1,0 +1,88 @@
+name: Release ZynkPOS
+
+# Triggers when you push a tag like: git tag v1.0.2 && git push origin v1.0.2
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write   # needed to create GitHub Releases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri build
+
+      - name: Get version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"          # e.g. v1.0.2
+          $ver = $tag.TrimStart('v')               # e.g. 1.0.2
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
+          echo "ver=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Collect artifacts
+        id: artifacts
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.version.outputs.ver }}"
+          $dir = "src-tauri\target\release\bundle\nsis"
+
+          $zip = "$dir\ZynkPOS_${ver}_x64-setup.nsis.zip"
+          $sig = "$dir\ZynkPOS_${ver}_x64-setup.nsis.zip.sig"
+          $exe = "$dir\ZynkPOS_${ver}_x64-setup.exe"
+
+          echo "zip=$zip" >> $env:GITHUB_OUTPUT
+          echo "sig=$sig" >> $env:GITHUB_OUTPUT
+          echo "exe=$exe" >> $env:GITHUB_OUTPUT
+
+          # Embed the signature content into a GitHub Actions output
+          $sigContent = (Get-Content $sig -Raw).Trim()
+          echo "sig_content=$sigContent" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ZynkPOS v${{ steps.version.outputs.ver }}
+          body: |
+            ## ZynkPOS v${{ steps.version.outputs.ver }}
+
+            ### Windows Installer
+            Download `ZynkPOS_${{ steps.version.outputs.ver }}_x64-setup.exe` below.
+
+            ---
+            <!-- UPDATER_SIG:${{ steps.artifacts.outputs.sig_content }} -->
+          files: |
+            ${{ steps.artifacts.outputs.zip }}
+            ${{ steps.artifacts.outputs.sig }}
+            ${{ steps.artifacts.outputs.exe }}
+          draft: false
+          prerelease: false
