@@ -56,7 +56,7 @@
                },
     "plugins":  {
                     "updater":  {
-                                    "pubkey":  "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI1MDdENjMyMDc2RDU1Q0MKUldUTVZXMEhNdFlISmNGcWNudFRCazVINUgrekRiRVd0c3o0Rm1GTHVPNmJEYkNMRVd5KzhYUDMK",
+                                    "pubkey":  "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IENDMTkyQTIzNzJCRjlEQjcKUldTM25iOXlJeW9aek0vWVZtY21YWTlaTWV3cjY3eFY2ellXMzhNaURLUzQrK1phanpDdWs1RXAK",
                                     "endpoints":  [
                                                       "https://samara.serverlk.com/api/pos/updates/latest"
                                                   ]
