@@ -48,7 +48,8 @@ jobs:
           [System.IO.File]::WriteAllText($keyPath, $keyText)
           Write-Host "Signing key written to $keyPath"
           Write-Host "Key preview: $($keyText.Substring(0, [Math]::Min(60, $keyText.Length)))..."
-          "TAURI_SIGNING_PRIVATE_KEY_PATH=$keyPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          # Tauri reads TAURI_SIGNING_PRIVATE_KEY — can be a file path or base64
+          "TAURI_SIGNING_PRIVATE_KEY=$keyPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Build Tauri app
         run: npm run tauri build -- --bundles nsis
