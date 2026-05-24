@@ -37,7 +37,7 @@ export function TopBar({ user, onOpenPrinterSettings, onOpenSettings, customerDi
         const { check } = await import('@tauri-apps/plugin-updater')
         const update = await check()
         if (!cancelled && update?.available) {
-          setUpdateAvailable({ version: update.currentVersion, notes: update.body ?? undefined })
+          setUpdateAvailable({ version: update.version, notes: update.body ?? undefined })
           // store the update object so we can call downloadAndInstall later
           ;(window as any).__posUpdate = update
         }
