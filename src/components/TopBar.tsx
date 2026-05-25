@@ -25,6 +25,13 @@ export function TopBar({ user, onOpenPrinterSettings, onOpenSettings, customerDi
   const [showUserMenu, setShowUserMenu] = useState(false)
   const isLiveServer = apiBase.toLowerCase().includes(LIVE_API_HOST)
 
+  // ── App version ──────────────────────────────────────────────────────────
+  const [appVersion, setAppVersion] = useState<string | null>(null)
+  useEffect(() => {
+    if (!isTauri()) return
+    import('@tauri-apps/api/app').then(({ getVersion }) => getVersion().then(setAppVersion).catch(() => {}))
+  }, [])
+
   // ── Auto-updater ──────────────────────────────────────────────────────────
   const [updateAvailable, setUpdateAvailable] = useState<{ version: string; notes?: string } | null>(null)
   const [updateState, setUpdateState] = useState<'idle' | 'downloading' | 'done'>('idle')
@@ -232,6 +239,9 @@ export function TopBar({ user, onOpenPrinterSettings, onOpenSettings, customerDi
                 <div className="px-3 py-2 border-b border-border mb-1">
                   <p className="text-xs text-text-1 font-semibold">{user?.name}</p>
                   <p className="text-[10px] text-text-3">{user?.email}</p>
+                  {appVersion && (
+                    <p className="text-[10px] text-text-3 mt-0.5">v{appVersion}</p>
+                  )}
                 </div>
                 <button
                   onClick={() => { setShowDayModal(true); setShowUserMenu(false) }}
