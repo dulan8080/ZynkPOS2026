@@ -37,16 +37,23 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
+        shell: pwsh
         env:
-          TAURI_SIGNING_PRIVATE_KEY: "untrusted comment: rsign encrypted secret key\n${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
+          TAURI_SIGNING_PRIVATE_KEY_RAW: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build -- --bundles nsis
+        run: |
+          $env:TAURI_SIGNING_PRIVATE_KEY = "untrusted comment: rsign encrypted secret key`n$env:TAURI_SIGNING_PRIVATE_KEY_RAW"
+          Write-Host "Key first line: $(($env:TAURI_SIGNING_PRIVATE_KEY -split "`n")[0])"
+          npm run tauri build -- --bundles nsis
 
       - name: Collect artifacts
         id: artifacts
         shell: pwsh
         run: |
           $dir = "src-tauri\target\release\bundle\nsis"
+          Write-Host "=== Files in $dir ==="
+          Get-ChildItem $dir | Select-Object Name | Format-Table -AutoSize
+
           $exe = (Get-ChildItem $dir -Filter "*-setup.exe" | Select-Object -First 1).FullName
           if (-not $exe) { Write-Error "No *-setup.exe found in $dir"; exit 1 }
           Write-Host "Installer: $exe"
