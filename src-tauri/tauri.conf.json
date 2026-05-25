@@ -1,7 +1,7 @@
 {
     "$schema":  "https://schema.tauri.app/config/2",
     "productName":  "ZynkPOS",
-    "version":  "1.0.11",
+    "version":  "1.0.12",
     "identifier":  "com.samaraadvertising.lassanapatapos",
     "build":  {
                   "frontendDist":  "../dist",
@@ -30,6 +30,7 @@
             },
     "bundle":  {
                    "active":  true,
+                   "createUpdaterArtifacts":  true,
                    "targets":  [
                                    "nsis"
                                ],
@@ -58,7 +59,7 @@
                },
     "plugins":  {
                     "updater":  {
-                                    "pubkey":  "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IENDMTkyQTIzNzJCRjlEQjcKUldTM25iOXlJeW9aek0vWVZtY21YWTlaTWV3cjY3eFY2ellXMzhNaURLUzQrK1phanpDdWs1RXAK",
+                                    "pubkey":  "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZENTIwMEQ0OEZDQzg0NkMKUldSc2hNeVAxQUJTYlhFWGlWZFN5NmdhVGhMZHA0cDBKNi9xcnZRd01zVXg0elhTc2FoVkpiRU4K",
                                     "endpoints":  [
                                                       "https://samara.serverlk.com/api/pos/updates/latest"
                                                   ]
