@@ -625,7 +625,8 @@ export function POSLayout() {
       const row = rows.find(r => r.rowKey === rowKey)
       if (row?.product) { qtyRefs.current[rowKey]?.focus(); return }
       const val = (searchTexts[rowKey] || '').trim()
-      const exact = products.find(p => p.barcode === val || p.sku === val)
+      const valLower = val.toLowerCase()
+      const exact = products.find(p => p.barcode?.toLowerCase() === valLower || p.sku?.toLowerCase() === valLower)
       if (exact) { selectProduct(rowKey, exact, true); return }
       if (idx >= 0 && res[idx]) selectProduct(rowKey, res[idx], true)
       else if (res.length === 1) selectProduct(rowKey, res[0], true)
@@ -690,7 +691,7 @@ export function POSLayout() {
   const catalogProducts = products.filter(p => {
     const matchCat = catalogCategory === null || p.category_id === catalogCategory
     const q = catalogSearch.toLowerCase()
-    const matchSearch = !q || p.name.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q))
+    const matchSearch = !q || p.name.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q) || (p.barcode && p.barcode.toLowerCase().includes(q))
     return matchCat && matchSearch && p.is_active
   })
 
